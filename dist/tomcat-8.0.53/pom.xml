@@ -9,7 +9,7 @@
         <relativePath>../pom.xml</relativePath>
         <groupId>org.echocat.tjl</groupId>
         <artifactId>dist</artifactId>
-        <version>1.0</version>
+        <version>0.1</version>
     </parent>
 
     <properties>
