@@ -51,6 +51,9 @@
                             <descriptors>
                                 <descriptor>dist/assembly.xml</descriptor>
                             </descriptors>
+                            <outputDirectory>${project.basedir}/../../target</outputDirectory>
+                            <finalName>tomcat-juli-${tomcat.version}</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
                 </executions>
