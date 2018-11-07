@@ -2,6 +2,15 @@
 
 Extension to Tomcat logging that will format the contents as JSON to be better compatible with logging environments for microservices.
 
+## TOC
+
+1. [Example](#example)
+2. [Installation](#installation)
+3. [Customization](#customization)
+4. [FAQ](#faq)
+5. [Contributing](#contributing)
+6. [License](#license)
+
 ## Example
 
 If everything is configured correctly you will see output like this on our console:
@@ -67,3 +76,29 @@ You can either specify a system property or environment variable to change the b
 |------|-------------|
 | `org.echocat.tjl.JsonFormatter` | Formats the whole output as JSON. One entry per line. |
 | `org.echocat.tjl.TextFormatter` | Formats every entry per line in a simple way - better for local debugging. |
+
+## FAQ
+
+#### How to activate debug output temporary?
+
+```bash
+LOG_LEVEL=debug bin/catalina.sh run
+```
+
+#### How to make output temporarily better readable?
+
+```bash
+LOG_FORMAT=text bin/catalina.sh run
+```
+
+## Contributing
+
+tomcat-json-logging is an open source project by [echocat](https://echocat.org).
+So if you want to make this project even better, you can contribute to this project on [Github](https://github.com/echocat/tomcat-json-logging)
+by [fork us](https://github.com/echocat/tomcat-json-logging/fork).
+
+If you commit code to this project, you have to accept that this code will be released under the [license](#license) of this project.
+
+## License
+
+See the [LICENSE](LICENSE) file.
