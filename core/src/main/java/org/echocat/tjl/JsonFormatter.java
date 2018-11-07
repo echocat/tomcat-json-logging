@@ -8,7 +8,9 @@ import java.util.Optional;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
-import static org.echocat.tjl.LogObject.logObject;
+import static java.lang.System.lineSeparator;
+import static org.echocat.tjl.Constants.ISO_DATE_FORMAT;
+import static org.echocat.tjl.LogEvent.logObject;
 
 @SuppressWarnings("WeakerAccess")
 public class JsonFormatter extends Formatter {
@@ -17,7 +19,7 @@ public class JsonFormatter extends Formatter {
 
     public JsonFormatter() {
         this(new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+            .setDateFormat(ISO_DATE_FORMAT)
             .registerTypeAdapter(Optional.class, new OptionalTypeAdapter())
             .create()
         );
@@ -29,16 +31,16 @@ public class JsonFormatter extends Formatter {
 
     @Override
     public String format(LogRecord record) {
-        return toJson(toLogObject(record)) + "\n";
+        return toJson(toLogObject(record)) + lineSeparator();
     }
 
-    protected LogObject toLogObject(LogRecord record) {
+    protected LogEvent toLogObject(LogRecord record) {
         return logObject()
             .basedOn(record)
             .build();
     }
 
-    protected String toJson(LogObject object) {
+    protected String toJson(LogEvent object) {
         return gson().toJson(object);
     }
 

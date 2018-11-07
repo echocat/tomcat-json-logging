@@ -2,19 +2,23 @@ package org.echocat.tjl;
 
 import com.google.gson.annotations.SerializedName;
 import org.apache.juli.OneLineFormatter;
+import org.echocat.tjl.util.ExtendedLogRecord;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import static java.lang.System.lineSeparator;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.*;
+import static org.echocat.tjl.Constants.CONSOLE_DATE_FORMAT;
 
-public class LogObject {
+public class LogEvent {
 
     private final static Formatter INTERNAL_FORMATTER = new OneLineFormatter();
 
@@ -25,27 +29,27 @@ public class LogObject {
     @SerializedName("when")
     private final Date when;
     @SerializedName("level")
-    private final String level;
-    @SerializedName("levelId")
-    private final int levelId;
+    private final LogLevel level;
     @SerializedName("source")
     private final Optional<String> source;
     @SerializedName("logger")
     private final String logger;
-    @SerializedName("threadId")
-    private final Optional<Integer> threadId;
+    @SerializedName("thread")
+    private final Optional<String> thread;
+    @SerializedName("processId")
+    private final Optional<Long> processId;
     @SerializedName("message")
     private final String message;
     @SerializedName("exception")
     private final Optional<String> exception;
 
-    protected LogObject(Builder builder) {
+    protected LogEvent(Builder builder) {
         when = builder.when.orElseGet(Date::new);
         level = builder.level.orElseThrow(() -> new NullPointerException("no level provided"));
-        levelId = builder.levelId.orElseThrow(() -> new NullPointerException("no levelId provided"));
         source = builder.source;
         logger = builder.logger.orElseThrow(() -> new NullPointerException("no logger provided"));
-        threadId = builder.threadId;
+        thread = builder.thread;
+        processId = builder.processId;
         message = builder.message.orElseThrow(() -> new NullPointerException("no message provided"));
         exception = builder.exception;
     }
@@ -54,12 +58,8 @@ public class LogObject {
         return when;
     }
 
-    public String getLevel() {
+    public LogLevel getLevel() {
         return level;
-    }
-
-    public int getLevelId() {
-        return levelId;
     }
 
     public Optional<String> getSource() {
@@ -70,8 +70,12 @@ public class LogObject {
         return logger;
     }
 
-    public Optional<Integer> getThreadId() {
-        return threadId;
+    public Optional<String> getThread() {
+        return thread;
+    }
+
+    public Optional<Long> getProcessId() {
+        return processId;
     }
 
     public String getMessage() {
@@ -82,35 +86,64 @@ public class LogObject {
         return exception;
     }
 
+    public String formatAsText() {
+        return String.format("%s %-5s %s --- [%15s] %-40s : %s%s",
+            new SimpleDateFormat(CONSOLE_DATE_FORMAT).format(getWhen()),
+            getLevel(),
+            getProcessId().map(Object::toString).orElse(""),
+            getThread().orElse(""),
+            getLogger(),
+            getMessage(),
+            getException().map(val -> lineSeparator() + val).orElse("")
+        );
+    }
+
+    @Override
+    public String toString() {
+        return formatAsText();
+    }
+
     public static class Builder {
 
         private Optional<Date> when = empty();
-        private Optional<String> level = empty();
-        private Optional<Integer> levelId = empty();
+        private Optional<LogLevel> level = empty();
         private Optional<String> source = empty();
         private Optional<String> logger = empty();
-        private Optional<Integer> threadId = empty();
+        private Optional<String> thread = empty();
+        private Optional<Long> processId = empty();
         private Optional<String> message = empty();
         private Optional<String> exception = empty();
 
-        public Builder with(LogObject base) {
-            withWhen(base.when);
-            withLevel(base.level);
-            withLevelId(base.levelId);
-            withSource(base.source.orElse(null));
-            withLogger(base.logger);
-            withThreadId(base.threadId.orElse(null));
-            withMessage(base.message);
-            withException(base.exception.orElse(null));
+        public Builder with(LogEvent base) {
+            withWhen(base.getWhen());
+            withLevel(base.getLevel());
+            withSource(base.getSource().orElse(null));
+            withLogger(base.getLogger());
+            withThread(base.getThread().orElse(null));
+            withProcessId(base.getProcessId().orElse(null));
+            withMessage(base.getMessage());
+            withException(base.getException().orElse(null));
             return this;
         }
 
         public Builder basedOn(LogRecord record) {
             withWhen(record.getMillis());
             withLevel(record.getLevel());
-            withSource(record.getSourceClassName() + "." + record.getSourceMethodName());
+            if (record instanceof ExtendedLogRecord) {
+                withSource(((ExtendedLogRecord) record).getSource()
+                    .orElse(null)
+                );
+                withThread(((ExtendedLogRecord) record).getThreadName()
+                    .orElseGet(() -> Integer.toString(record.getThreadID()))
+                );
+                withProcessId(((ExtendedLogRecord) record).getProcessId()
+                    .orElse(null)
+                );
+            } else {
+                withSource(record.getSourceClassName() + "." + record.getSourceMethodName());
+                withThread(Integer.toString(record.getThreadID()));
+            }
             withLogger(record.getLoggerName());
-            withThreadId(record.getThreadID());
             withMessage(INTERNAL_FORMATTER.formatMessage(record));
             withException(record.getThrown());
             return this;
@@ -127,18 +160,11 @@ public class LogObject {
 
         public Builder withLevel(Level level) {
             requireNonNull(level, "level is null");
-            withLevel(level.getName());
-            withLevelId(level.intValue());
-            return this;
+            return withLevel(LogLevel.valueOf(level));
         }
 
-        public Builder withLevel(String level) {
+        public Builder withLevel(LogLevel level) {
             this.level = of(requireNonNull(level, "level is null"));
-            return this;
-        }
-
-        public Builder withLevelId(int levelId) {
-            this.levelId = of(levelId);
             return this;
         }
 
@@ -152,8 +178,13 @@ public class LogObject {
             return this;
         }
 
-        public Builder withThreadId(Integer threadId) {
-            this.threadId = ofNullable(threadId);
+        public Builder withThread(String thread) {
+            this.thread = ofNullable(thread);
+            return this;
+        }
+
+        public Builder withProcessId(Long processId) {
+            this.processId = ofNullable(processId);
             return this;
         }
 
@@ -178,8 +209,8 @@ public class LogObject {
             return this;
         }
 
-        public LogObject build() {
-            return new LogObject(this);
+        public LogEvent build() {
+            return new LogEvent(this);
         }
 
     }
