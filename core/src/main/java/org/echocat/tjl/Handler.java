@@ -5,15 +5,17 @@ import org.echocat.tjl.util.ExtendedLogRecord;
 import java.io.OutputStream;
 import java.security.PrivilegedAction;
 import java.util.Optional;
-import java.util.logging.*;
+import java.util.logging.Formatter;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.StreamHandler;
 
 import static java.lang.ClassLoader.getSystemClassLoader;
 import static java.lang.System.getProperty;
 import static java.lang.System.getenv;
 import static java.security.AccessController.doPrivileged;
 import static java.util.Optional.ofNullable;
-import static java.util.logging.Level.ALL;
-import static java.util.logging.Level.parse;
+import static java.util.logging.Level.*;
 import static java.util.logging.LogManager.getLogManager;
 
 public class Handler extends StreamHandler {
@@ -67,16 +69,28 @@ public class Handler extends StreamHandler {
 
     protected Level determineLevel() {
         return findProperty(getClass(), "level")
-            .map(value -> parse(value.trim()))
+            .map(this::parseLevel)
             .orElse(ALL);
     }
 
     protected void patchGlobalLevelIfRequired() {
         findSystemProperty("log.level", "LOG_LEVEL")
-            .map(String::trim)
-            .map(String::toUpperCase)
-            .map(Level::parse)
+            .map(this::parseLevel)
             .ifPresent(level -> getLogManager().getLogger("").setLevel(level));
+    }
+
+    protected Level parseLevel(String plain) {
+        final String input = plain.trim().toUpperCase();
+        if (input.equals("DEBUG")) {
+            return FINE;
+        }
+        if (input.equals("TRACE")) {
+            return FINEST;
+        }
+        if (input.equals("ERROR") || input.equals("FATAL")) {
+            return SEVERE;
+        }
+        return Level.parse(input);
     }
 
     protected Object newInstanceOf(String className) {
