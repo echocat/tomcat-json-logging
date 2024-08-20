@@ -19,6 +19,3 @@ jobs:
           cache: maven
       - name: Build with Maven
         run: ./mvnw -B verify
-
-      - name: Update dependency graph
-        uses: advanced-security/maven-dependency-submission-action@v4
