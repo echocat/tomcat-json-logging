@@ -1,0 +1,24 @@
+name: Continues Integration
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  ci:
+    name: Continues Integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build with Maven
+        run: ./mvnw -B verify
+
+      - name: Update dependency graph
+        uses: advanced-security/maven-dependency-submission-action@v4
