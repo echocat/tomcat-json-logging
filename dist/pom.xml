@@ -19,7 +19,7 @@
     </modules>
 
     <properties>
-        <tomcat.version>11.0.13</tomcat.version> <!-- TO BE OVERRIDDEN BY CHILD -->
+        <tomcat.version>11.0.14</tomcat.version> <!-- TO BE OVERRIDDEN BY CHILD -->
     </properties>
 
     <dependencies>
